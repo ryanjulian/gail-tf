@@ -145,8 +145,13 @@ GAIL policy [here](https://drive.google.com/drive/folders/0B3fKFm-j0RqeRnZMTUJHS
 and BC policy [here](https://drive.google.com/drive/folders/0B3fKFm-j0RqeVFFmMWpHMk85cUk?usp=sharing)**
 
 ## Hacking
-We don't have a pip package yet, so you'll need to add this repo to your 
-PYTHONPATH manually.
+We don't have a pip package yet, we've provided a script to add this package to
+your PYTHONPATH
+```bash
+bash gail-tf/activate.sh
+```
+
+You may also choose to add it manually:
 ```bash
 export PYTHONPATH=/path/to/your/repo/with/gailtf:$PYTHONPATH
 ```
