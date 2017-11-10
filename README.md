@@ -4,6 +4,28 @@ behavior cloning)
 
 **disclaimers**: some code is borrowed from @openai/baselines
 
+# TL;DR - What's new in this branch?
+The discriminator in the original GAIL compares the expert policy to the generator policy via trajectory rollouts
+that contain both the actions and the states (observations) at every time step.
+
+In this setting, however, the discriminator only compares rollouts based on the 5 endeffector features, i.e.
+3D vectors pointing from the root (torso) to the head, hands and feet.
+
+## Getting started
+First, sample trajectories (rollouts) by using a pretrained expert policy (we provided one in `baselines/expert`):
+```bash
+# Issue this command in baselines/trpo_mpi
+python3 run_mujoco.py --env_id HumanoidFeaturized-v1 --task sample_trajectory --sample_stochastic False --load_model_path ../../expert/humanoid_policy.ckpt
+```
+
+This will create a Pickel file inside your current directory. Now copy this pkl file to `rollout` (project home folder).
+Then issue the following command to run GAIL using this expert:
+```bash
+# Issue this command in the project home folder
+python3 main.py
+```
+
+
 ## What's GAIL?
 - model free imtation learning -> low sample efficiency in training time
   - model-based GAIL: End-to-End Differentiable Adversarial Imitation Learning
