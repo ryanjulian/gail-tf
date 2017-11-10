@@ -38,6 +38,7 @@ def train(args):
 
     task_name = "trpo." + args.env_id.split("-")[0] + "." + ("%.2f" % args.entcoeff)
     args.checkpoint_dir = osp.join(args.checkpoint_dir, task_name)
+    print("Using checkpoint directory %s." % args.checkpoint_dir)
     trpo_mpi.learn(env, policy_fn, timesteps_per_batch=1024, max_kl=0.01, cg_iters=10, cg_damping=0.1,
                    max_timesteps=args.num_timesteps, gamma=0.99, lam=0.98, vf_iters=5, vf_stepsize=1e-3,
                    sample_stochastic=args.sample_stochastic, task_name=task_name, save_per_iter=args.save_per_iter,
@@ -48,15 +49,15 @@ def train(args):
 def main():
     import argparse
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--env_id', help='environment ID', default='Hopper-v1')
+    parser.add_argument('--env_id', help='environment ID', default='HumanoidFeaturized-v1')
     parser.add_argument('--seed', help='RNG seed', type=int, default=0)
     parser.add_argument('--task', help='Choose to do which task', type=str, choices=['train', 'sample_trajectory'],
                         default='train')
     parser.add_argument('--sample_stochastic', type=bool, default=False)
-    parser.add_argument('--num_cpu', help='number of cpu to used', type=int, default=1)
+    parser.add_argument('--num_cpu', help='number of cpu to used', type=int, default=4)
     parser.add_argument('--entcoeff', help='entropy coefficiency', type=float, default=0)
     parser.add_argument('--save_per_iter', help='save model every xx iterations', type=int, default=100)
-    parser.add_argument('--num_timesteps', help='number of timesteps per episode', type=int, default=1e6)
+    parser.add_argument('--num_timesteps', help='number of timesteps per episode', type=int, default=1e8)
     parser.add_argument('--checkpoint_dir', help='the directory to save model', default='checkpoint')
     parser.add_argument('--load_model_path', help='if provided, load the model', type=str, default=None)
     args = parser.parse_args()

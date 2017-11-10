@@ -277,10 +277,13 @@ def learn(env, policy_func, *,
     while True:
         if callback: callback(locals(), globals())
         if max_timesteps and timesteps_so_far >= max_timesteps:
+            print("Terminated because timesteps_so_far >= max_timesteps.")
             break
         elif max_episodes and episodes_so_far >= max_episodes:
+            print("Terminated because episodes_so_far >= max_episodes.")
             break
         elif max_iters and iters_so_far >= max_iters:
+            print("Terminated because iters_so_far >= max_iters.")
             break
         logger.log("********** Iteration %i ************" % iters_so_far)
         # Save model
