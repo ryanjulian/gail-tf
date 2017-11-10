@@ -4,6 +4,9 @@ import numpy as np
 from tqdm import tqdm
 import ipdb
 
+
+# This module loads demonstration trajectories from a Pickle file.
+
 class Dset(object):
     def __init__(self, inputs, labels, randomize):
         self.inputs = inputs
@@ -12,7 +15,7 @@ class Dset(object):
         self.randomize = randomize
         self.num_pairs = len(inputs)
         self.init_pointer()
-       
+
     def init_pointer(self):
         self.pointer = 0
         if self.randomize:
@@ -33,6 +36,7 @@ class Dset(object):
         self.pointer = end
         return inputs, labels
 
+
 class Mujoco_Dset(object):
     def __init__(self, expert_path, train_fraction=0.7, ret_threshold=None, traj_limitation=np.inf, randomize=True):
         with open(expert_path, "rb") as f:
@@ -51,8 +55,8 @@ class Mujoco_Dset(object):
             obs.append(traj["ob"])
             acs.append(traj["ac"])
         self.num_traj = len(rets)
-        self.avg_ret = sum(rets)/len(rets)
-        self.avg_len = sum(lens)/len(lens)
+        self.avg_ret = sum(rets) / len(rets)
+        self.avg_len = sum(lens) / len(lens)
         self.rets = np.array(rets)
         self.lens = np.array(lens)
         self.obs = np.array([v for ob in obs for v in ob])
@@ -64,17 +68,17 @@ class Mujoco_Dset(object):
         self.randomize = randomize
         self.dset = Dset(self.obs, self.acs, self.randomize)
         # for behavior cloning
-        self.train_set = Dset(self.obs[:int(self.num_transition*train_fraction),:], 
-                      self.acs[:int(self.num_transition*train_fraction),:], self.randomize)
-        self.val_set = Dset(self.obs[int(self.num_transition*train_fraction):,:], 
-                      self.acs[int(self.num_transition*train_fraction):,:], self.randomize)
+        self.train_set = Dset(self.obs[:int(self.num_transition * train_fraction), :],
+                              self.acs[:int(self.num_transition * train_fraction), :], self.randomize)
+        self.val_set = Dset(self.obs[int(self.num_transition * train_fraction):, :],
+                            self.acs[int(self.num_transition * train_fraction):, :], self.randomize)
         self.log_info()
 
     def log_info(self):
-        logger.log("Total trajectories: %d"%self.num_traj)
-        logger.log("Total transitions: %d"%self.num_transition)
-        logger.log("Average episode length: %f"%self.avg_len)
-        logger.log("Average returns: %f"%self.avg_ret)
+        logger.log("Total trajectories: %d" % self.num_traj)
+        logger.log("Total transitions: %d" % self.num_transition)
+        logger.log("Average episode length: %f" % self.avg_len)
+        logger.log("Average returns: %f" % self.avg_ret)
 
     def get_next_batch(self, batch_size, split=None):
         if split is None:
@@ -97,10 +101,11 @@ def test(expert_path):
     dset = Mujoco_Dset(expert_path)
     dset.plot()
 
+
 if __name__ == '__main__':
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--expert_path", type=str, default="../baselines/ppo1/ppo.Hopper.0.00.pkl")
     args = parser.parse_args()
     test(args.expert_path)
-
