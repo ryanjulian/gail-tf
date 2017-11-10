@@ -13,7 +13,7 @@ def train(args):
     env = gym.make(args.env_id)
     def policy_fn(name, ob_space, ac_space):
         return mlp_policy.MlpPolicy(name=name, ob_space=ob_space, ac_space=ac_space,
-            hid_size=64, num_hid_layers=2)
+            hid_size=32, num_hid_layers=2)
     env = bench.Monitor(env, logger.get_dir() and 
         osp.join(logger.get_dir(), "monitor.json"))
     env.seed(args.seed)

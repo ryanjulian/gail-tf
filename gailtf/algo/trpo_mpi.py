@@ -12,8 +12,10 @@ from contextlib import contextmanager
 from gailtf.common.statistics import stats
 import ipdb
 
+"""This is the GAIL implementation."""
 
-def traj_segment_generator(pi, env, discriminator, horizon, stochastic):
+
+def traj_segment_generator(pi, env, discriminator, horizon, stochastic, compute_features=True):
     # Initialize state variables
     t = 0
     ac = env.action_space.sample()
@@ -38,6 +40,11 @@ def traj_segment_generator(pi, env, discriminator, horizon, stochastic):
     acs = np.array([ac for _ in range(horizon)])
     prevacs = acs.copy()
 
+    feature, features = [], []
+    if compute_features:
+        feature = env.env.env.compute_features()
+        features = np.array([feature for _ in range(horizon)])
+
     while True:
         prevac = ac
         ac, vpred = pi.act(stochastic, ob)
@@ -45,9 +52,15 @@ def traj_segment_generator(pi, env, discriminator, horizon, stochastic):
         # before returning segment [0, T-1] so we get the correct
         # terminal value
         if t > 0 and t % horizon == 0:
-            yield {"ob": obs, "rew": rews, "vpred": vpreds, "new": news,
-                   "ac": acs, "prevac": prevacs, "nextvpred": vpred * (1 - new),
-                   "ep_rets": ep_rets, "ep_lens": ep_lens, "ep_true_rets": ep_true_rets}
+            if compute_features:
+                yield {"ob": obs, "rew": rews, "vpred": vpreds, "new": news,
+                       "ac": acs, "prevac": prevacs, "nextvpred": vpred * (1 - new),
+                       "ep_rets": ep_rets, "ep_lens": ep_lens, "ep_true_rets": ep_true_rets,
+                       "features": features}
+            else:
+                yield {"ob": obs, "rew": rews, "vpred": vpreds, "new": news,
+                       "ac": acs, "prevac": prevacs, "nextvpred": vpred * (1 - new),
+                       "ep_rets": ep_rets, "ep_lens": ep_lens, "ep_true_rets": ep_true_rets}
             _, vpred = pi.act(stochastic, ob)
             # Be careful!!! if you change the downstream algorithm to aggregate
             # several of these batches, then be sure to do a deepcopy
@@ -61,10 +74,17 @@ def traj_segment_generator(pi, env, discriminator, horizon, stochastic):
         acs[i] = ac
         prevacs[i] = prevac
 
-        rew = discriminator.get_reward(ob, ac)
+        if compute_features:
+            features[i] = feature
+
+        # TODO ob should only be the features!
+        rew = discriminator.get_reward(feature)
         ob, true_rew, new, _ = env.step(ac)
         rews[i] = rew
         true_rews[i] = true_rew
+
+        if compute_features:
+            feature = env.env.env.compute_features()
 
         cur_ep_ret += rew
         cur_ep_true_ret += true_rew
@@ -109,6 +129,9 @@ def learn(env, policy_func, discriminator, expert_dataset,
           save_per_iter=100, ckpt_dir=None, log_dir=None,
           load_model_path=None, task_name=None
           ):
+    ###############################
+    #          GENERATOR          #
+    ###############################
     nworkers = MPI.COMM_WORLD.Get_size()
     rank = MPI.COMM_WORLD.Get_rank()
     np.set_printoptions(precision=3)
@@ -219,6 +242,8 @@ def learn(env, policy_func, discriminator, expert_dataset,
     if load_model_path is not None:
         U.load_state(load_model_path)
 
+    feature = []
+
     while True:
         if callback: callback(locals(), globals())
         if max_timesteps and timesteps_so_far >= max_timesteps:
@@ -244,7 +269,7 @@ def learn(env, policy_func, discriminator, expert_dataset,
                 seg = seg_gen.__next__()
             add_vtarg_and_adv(seg, gamma, lam)
             # ob, ac, atarg, ret, td1ret = map(np.concatenate, (obs, acs, atargs, rets, td1rets))
-            ob, ac, atarg, tdlamret = seg["ob"], seg["ac"], seg["adv"], seg["tdlamret"]
+            feature, ob, ac, atarg, tdlamret = seg["features"], seg["ob"], seg["ac"], seg["adv"], seg["tdlamret"]
             vpredbefore = seg["vpred"]  # predicted value function before udpate
             atarg = (atarg - atarg.mean()) / atarg.std()  # standardized advantage function estimate
 
@@ -306,18 +331,23 @@ def learn(env, policy_func, discriminator, expert_dataset,
         for (lossname, lossval) in zip(loss_names, meanlosses):
             logger.record_tabular(lossname, lossval)
         logger.record_tabular("ev_tdlam_before", explained_variance(vpredbefore, tdlamret))
+
+        ###############################
+        #        DISCRIMINATOR        #
+        ###############################
+
         # ------------------ Update D ------------------
         logger.log("Optimizing Discriminator...")
         logger.log(fmt_row(13, discriminator.loss_name))
         ob_expert, ac_expert = expert_dataset.get_next_batch(len(ob))
         batch_size = len(ob) // d_step
         d_losses = []  # list of tuples, each of which gives the loss for a minibatch
-        for ob_batch, ac_batch in dataset.iterbatches((ob, ac),
+        for ob_batch, ac_batch in dataset.iterbatches((feature, ac),
                                                       include_final_partial_batch=False, batch_size=batch_size):
             ob_expert, ac_expert = expert_dataset.get_next_batch(len(ob_batch))
             # update running mean/std for discriminator
             if hasattr(discriminator, "obs_rms"): discriminator.obs_rms.update(np.concatenate((ob_batch, ob_expert), 0))
-            *newlosses, g = discriminator.lossandgrad(ob_batch, ac_batch, ob_expert, ac_expert)
+            *newlosses, g = discriminator.lossandgrad(ob_batch, ob_expert)
             d_adam.update(allmean(g), d_stepsize)
             d_losses.append(newlosses)
         logger.log(fmt_row(13, np.mean(d_losses, axis=0)))

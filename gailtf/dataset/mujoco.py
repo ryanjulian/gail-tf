@@ -37,6 +37,8 @@ class Dset(object):
         return inputs, labels
 
 
+# TODO remove actions
+# TODO rename obs to "features"
 class Mujoco_Dset(object):
     def __init__(self, expert_path, train_fraction=0.7, ret_threshold=None, traj_limitation=np.inf, randomize=True):
         with open(expert_path, "rb") as f:
@@ -52,26 +54,29 @@ class Mujoco_Dset(object):
                 break
             rets.append(traj["ep_ret"])
             lens.append(len(traj["ob"]))
-            obs.append(traj["ob"])
+            obs.append(traj["features"])
             acs.append(traj["ac"])
         self.num_traj = len(rets)
         self.avg_ret = sum(rets) / len(rets)
         self.avg_len = sum(lens) / len(lens)
         self.rets = np.array(rets)
         self.lens = np.array(lens)
-        self.obs = np.array([v for ob in obs for v in ob])
+        self.obs = np.array(obs) # np.array([v for ob in obs for v in ob])
         self.acs = np.array([v for ac in acs for v in ac])
-        if len(self.acs) > 2:
-            self.acs = np.squeeze(self.acs)
-        assert len(self.obs) == len(self.acs)
+        # if len(self.acs) > 2:
+        #     self.acs = np.squeeze(self.acs)
+        # assert len(self.obs) == len(self.acs)
         self.num_transition = len(self.obs)
         self.randomize = randomize
-        self.dset = Dset(self.obs, self.acs, self.randomize)
+        # TODO pointless pairs of (obs, obs)
+        self.dset = Dset(self.obs, self.obs, self.randomize)
         # for behavior cloning
+        # TODO we don't do behavioral cloning, just need the features (obs)
+        # TODO pointless pairs of (obs, obs)
         self.train_set = Dset(self.obs[:int(self.num_transition * train_fraction), :],
-                              self.acs[:int(self.num_transition * train_fraction), :], self.randomize)
+                              self.obs[:int(self.num_transition * train_fraction), :], self.randomize)
         self.val_set = Dset(self.obs[int(self.num_transition * train_fraction):, :],
-                            self.acs[int(self.num_transition * train_fraction):, :], self.randomize)
+                            self.obs[int(self.num_transition * train_fraction):, :], self.randomize)
         self.log_info()
 
     def log_info(self):
