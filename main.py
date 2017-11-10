@@ -13,7 +13,7 @@ def argsparser():
     parser = argparse.ArgumentParser("Tensorflow Implementation of GAIL")
     parser.add_argument('--env_id', help='environment ID', default='HumanoidFeaturized-v1')
     parser.add_argument('--seed', help='RNG seed', type=int, default=0)
-    parser.add_argument('--num_cpu', help='number of cpu to used', type=int, default=1)
+    parser.add_argument('--num_cpu', help='number of cpu to used', type=int, default=4)
     parser.add_argument('--expert_path', type=str, default='rollout/stochastic.trpo.HumanoidFeaturized.0.00.pkl')
     parser.add_argument('--checkpoint_dir', help='the directory to save model', default='checkpoint')
     parser.add_argument('--log_dir', help='the directory to save log file', default='log')

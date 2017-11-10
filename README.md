@@ -12,7 +12,17 @@ In this setting, however, the discriminator only compares rollouts based on the 
 3D vectors pointing from the root (torso) to the head, hands and feet.
 
 ## Getting started
-First, sample trajectories (rollouts) by using a pretrained expert policy (we provided one in `baselines/expert`):
+First, you can optionally train an expert policy via the following command, or use a pretrained policy.
+```bash
+# Issue this command in the project home folder
+export MPI_NCPU=4  # number of CPU cores to use in parallel
+PYTHONPATH=.:$PYTHONPATH mpirun -np $MPI_NCPU python3 gailtf/baselines/trpo_mpi/run_mujoco.py
+```
+Using this command, a folder named `checkpoint` will be created in which the TensorFlow checkpoints are stored that
+contain the learned weights of the policy network. By default, every 100 iterations, a checkpoint will be created
+so that the training script can be stopped before all 1e8 episodes are samples (default setting).
+
+Next, sample trajectories (rollouts) by using a the expert policy (we provided one in `baselines/expert`):
 ```bash
 # Issue this command in baselines/trpo_mpi
 python3 run_mujoco.py --env_id HumanoidFeaturized-v1 --task sample_trajectory --sample_stochastic False --load_model_path ../../expert/humanoid_policy.ckpt
