@@ -22,13 +22,13 @@ Using this command, a folder named `checkpoint` will be created in which the Ten
 contain the learned weights of the policy network. By default, every 100 iterations, a checkpoint will be created
 so that the training script can be stopped before all 1e8 episodes are samples (default setting).
 
-Next, sample trajectories (rollouts) by using a the expert policy (we provided one in `baselines/expert`):
+Next, sample trajectories (rollouts) by using the expert policy (we provided one in `baselines/expert`):
 ```bash
 # Issue this command in baselines/trpo_mpi
 python3 run_mujoco.py --env_id HumanoidFeaturized-v1 --task sample_trajectory --sample_stochastic False --load_model_path ../../expert/humanoid_policy.ckpt
 ```
 
-This will create a Pickel file inside your current directory. Now copy this pkl file to `rollout` (project home folder).
+This will create a Pickle file inside your current directory. Now copy this pkl file to `rollout` (project home folder).
 Then issue the following command to run GAIL using this expert:
 ```bash
 # Issue this command in the project home folder
