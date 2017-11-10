@@ -57,6 +57,15 @@ checkpoint in the series.
 export PATH_TO_CKPT=./checkpoint/trpo.Hopper.0.00/trpo.Hopper.00-900
 ```
 
+#### Use an existing running humanoid policy
+A provided expert policy for the `Humanoid-v1` environment is given in the `expert` folder.
+```bash
+export PATH_TO_CKPT=./expert/trpo.Humanoid.0.00-10100
+export ENV_ID="HumanoidFeaturized-v1"
+```
+By selecting the "featurized" `Humanoid-v1` environment, the latter command will ensure that during sampling,
+the 5 endeffector (head, hands, feet) feature vectors are computed and included in the trajectory Pickle file.
+
 ##### Sample from the generated expert policy
 ```bash
 python3 $BASELINES_PATH/run_mujoco.py --env_id $ENV_ID --task sample_trajectory --sample_stochastic $SAMPLE_STOCHASTIC --load_model_path $PATH_TO_CKPT
