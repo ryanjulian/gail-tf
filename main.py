@@ -37,8 +37,8 @@ def argsparser():
     parser.add_argument('--policy_entcoeff', help='entropy coefficiency of policy', type=float, default=0)
     parser.add_argument('--adversary_entcoeff', help='entropy coefficiency of discriminator', type=float, default=1e-3)
     # Traing Configuration
-    parser.add_argument('--save_per_iter', help='save model every xx iterations', type=int, default=100)
-    parser.add_argument('--num_timesteps', help='number of timesteps per episode', type=int, default=5e6)
+    parser.add_argument('--save_per_iter', help='save model every xx iterations', type=int, default=10)
+    parser.add_argument('--num_timesteps', help='number of timesteps', type=int, default=1e8)
     # Behavior Cloning
     parser.add_argument('--pretrained', help='Use BC to pretrain', type=bool, default=False)
     parser.add_argument('--BC_max_iter', help='Max iteration for training BC', type=int, default=1e4)
@@ -70,7 +70,7 @@ def main(args):
 
     def policy_fn(name, ob_space, ac_space, reuse=False):
         return mlp_policy.MlpPolicy(name=name, ob_space=ob_space, ac_space=ac_space,
-                                    reuse=reuse, hid_size=32, num_hid_layers=2)
+                                    reuse=reuse, hid_size=64, num_hid_layers=2)
 
     env = bench.Monitor(env, logger.get_dir() and
                         osp.join(logger.get_dir(), "monitor.json"))
