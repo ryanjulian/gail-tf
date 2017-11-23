@@ -27,6 +27,8 @@ def traj_episode_generator(pi, env, horizon, stochastic, compute_features=True):
     rews = []
     news = []
     acs = []
+    features = []
+    positions = []
 
     while True:
         prevac = ac
@@ -34,6 +36,10 @@ def traj_episode_generator(pi, env, horizon, stochastic, compute_features=True):
         obs.append(ob)
         news.append(new)
         acs.append(ac)
+        feat = env.env.env.compute_features()
+        pos = env.env.env.compute_positions()
+        features.append(feat)
+        positions.append(pos)
         ob, rew, new, _ = env.step(ac)
         rews.append(rew)
 
@@ -45,11 +51,11 @@ def traj_episode_generator(pi, env, horizon, stochastic, compute_features=True):
             rews = np.array(rews)
             news = np.array(news)
             acs = np.array(acs)
+            features = np.array(features)
             if compute_features:
-                features = env.env.env.compute_features()
                 yield {"ob": obs, "rew": rews, "new": news, "ac": acs,
                        "ep_ret": cur_ep_ret, "ep_len": cur_ep_len,
-                       "features": features}
+                       "features": features, "positions": positions}
             else:
                 yield {"ob": obs, "rew": rews, "new": news, "ac": acs,
                        "ep_ret": cur_ep_ret, "ep_len": cur_ep_len}
@@ -63,6 +69,7 @@ def traj_episode_generator(pi, env, horizon, stochastic, compute_features=True):
             rews = []
             news = []
             acs = []
+            features = []
         t += 1
 
 
@@ -165,10 +172,10 @@ def learn(env, policy_func, *,
           vf_iters=3,
           max_timesteps=0, max_episodes=0, max_iters=0,  # time constraint
           callback=None,
-          sample_stochastic=True, task="train",
+          sample_stochastic=False, task="train",
           ckpt_dir=None, save_per_iter=100,
           load_model_path=None, task_name=None,
-          max_sample_traj=1500
+          max_sample_traj=10
           ):
     nworkers = MPI.COMM_WORLD.Get_size()
     rank = MPI.COMM_WORLD.Get_rank()
@@ -391,14 +398,14 @@ def sample_trajectory(load_model_path, max_sample_traj, traj_gen, task_name, sam
     for iters_so_far in range(max_sample_traj):
         logger.log("********** Iteration %i ************" % iters_so_far)
         traj = traj_gen.__next__()
-        features, ob, new, ep_ret, ac, rew, ep_len = traj['features'], traj['ob'], traj['new'], traj['ep_ret'], traj['ac'], traj['rew'], traj[
+        positions, features, ob, new, ep_ret, ac, rew, ep_len = traj['positions'], traj['features'], traj['ob'], traj['new'], traj['ep_ret'], traj['ac'], traj['rew'], traj[
             'ep_len']
         logger.record_tabular("ep_ret", ep_ret)
         logger.record_tabular("ep_len", ep_len)
         logger.record_tabular("immediate reward", np.mean(rew))
         if MPI.COMM_WORLD.Get_rank() == 0:
             logger.dump_tabular()
-        traj_data = {"ob": ob, "ac": ac, "rew": rew, "ep_ret": ep_ret, "features": features}
+        traj_data = {"ob": ob, "ac": ac, "rew": rew, "ep_ret": ep_ret, "features": features, "positions": positions}
         sample_trajs.append(traj_data)
 
     sample_ep_rets = [traj["ep_ret"] for traj in sample_trajs]

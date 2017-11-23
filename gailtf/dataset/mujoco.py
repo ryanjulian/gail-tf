@@ -44,25 +44,25 @@ class Mujoco_Dset(object):
         with open(expert_path, "rb") as f:
             traj_data = pkl.load(f)
         obs = []
-        acs = []
-        rets = []
-        lens = []
+        # acs = []
+        # rets = []
+        # lens = []
         for traj in tqdm(traj_data):
-            if ret_threshold is not None and traj["ep_ret"] < ret_threshold:
-                pass
-            if len(rets) >= traj_limitation:
-                break
-            rets.append(traj["ep_ret"])
-            lens.append(len(traj["ob"]))
+            # if ret_threshold is not None and traj["ep_ret"] < ret_threshold:
+            #     pass
+            # if len(rets) >= traj_limitation:
+            #     break
+            # rets.append(traj["ep_ret"])
+            # lens.append(len(traj["ob"]))
             obs.append(traj["features"])
-            acs.append(traj["ac"])
-        self.num_traj = len(rets)
-        self.avg_ret = sum(rets) / len(rets)
-        self.avg_len = sum(lens) / len(lens)
-        self.rets = np.array(rets)
-        self.lens = np.array(lens)
-        self.obs = np.array(obs) # np.array([v for ob in obs for v in ob])
-        self.acs = np.array([v for ac in acs for v in ac])
+            # acs.append(traj["ac"])
+        # self.num_traj = len(rets)
+        # self.avg_ret = sum(rets) / len(rets)
+        # self.avg_len = sum(lens) / len(lens)
+        # self.rets = np.array(rets)
+        # self.lens = np.array(lens)
+        self.obs = np.array([v for ob in obs for v in ob])
+        # self.acs = np.array([v for ac in acs for v in ac])
         # if len(self.acs) > 2:
         #     self.acs = np.squeeze(self.acs)
         # assert len(self.obs) == len(self.acs)
@@ -80,10 +80,10 @@ class Mujoco_Dset(object):
         self.log_info()
 
     def log_info(self):
-        logger.log("Total trajectories: %d" % self.num_traj)
+        # logger.log("Total trajectories: %d" % self.num_traj)
         logger.log("Total transitions: %d" % self.num_transition)
-        logger.log("Average episode length: %f" % self.avg_len)
-        logger.log("Average returns: %f" % self.avg_ret)
+        # logger.log("Average episode length: %f" % self.avg_len)
+        # logger.log("Average returns: %f" % self.avg_ret)
 
     def get_next_batch(self, batch_size, split=None):
         if split is None:
@@ -95,16 +95,16 @@ class Mujoco_Dset(object):
         else:
             raise NotImplementedError
 
-    def plot(self):
-        import matplotlib.pyplot as plt
-        plt.hist(self.rets)
-        plt.savefig("histogram_rets.png")
-        plt.close()
+    # def plot(self):
+    #     import matplotlib.pyplot as plt
+    #     plt.hist(self.rets)
+    #     plt.savefig("histogram_rets.png")
+    #     plt.close()
 
 
 def test(expert_path):
     dset = Mujoco_Dset(expert_path)
-    dset.plot()
+    # dset.plot()
 
 
 if __name__ == '__main__':

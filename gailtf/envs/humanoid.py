@@ -27,3 +27,13 @@ class HumanoidFeatureEnv(HumanoidEnv):
             normalize(self.get_body_com("right_foot") - self.get_body_com("torso"))
         ])
         return features.flatten()
+
+    def compute_positions(self):
+        return {
+            "root": self.get_body_com("torso"),
+            "head": self.get_body_com("head"),
+            "left_hand": self.get_body_com("left_hand"),
+            "right_hand": self.get_body_com("right_hand"),
+            "left_foot": self.get_body_com("left_foot"),
+            "right_foot": self.get_body_com("right_foot")
+        }
