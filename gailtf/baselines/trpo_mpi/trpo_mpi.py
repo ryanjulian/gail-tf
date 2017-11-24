@@ -172,7 +172,7 @@ def learn(env, policy_func, *,
           vf_iters=3,
           max_timesteps=0, max_episodes=0, max_iters=0,  # time constraint
           callback=None,
-          sample_stochastic=False, task="train",
+          sample_stochastic=True, task="train",
           ckpt_dir=None, save_per_iter=100,
           load_model_path=None, task_name=None,
           max_sample_traj=10
@@ -292,7 +292,7 @@ def learn(env, policy_func, *,
         elif max_iters and iters_so_far >= max_iters:
             print("Terminated because iters_so_far >= max_iters.")
             break
-        logger.log("********** Iteration %i ************" % iters_so_far)
+        logger.log("********** Iteration %i of %i ************" % (iters_so_far, max_iters))
         # Save model
         if iters_so_far % save_per_iter == 0 and ckpt_dir is not None:
             U.save_state(os.path.join(ckpt_dir, task_name), counter=iters_so_far)

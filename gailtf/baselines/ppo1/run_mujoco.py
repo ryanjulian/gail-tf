@@ -6,39 +6,43 @@ import gym, logging
 from gailtf.baselines import logger
 import ipdb
 
+
 def train(args):
     from gailtf.baselines.ppo1 import mlp_policy, pposgd_simple
     U.make_session(num_cpu=args.num_cpu).__enter__()
     set_global_seeds(args.seed)
     env = gym.make(args.env_id)
+
     def policy_fn(name, ob_space, ac_space):
         return mlp_policy.MlpPolicy(name=name, ob_space=ob_space, ac_space=ac_space,
-            hid_size=32, num_hid_layers=2)
-    env = bench.Monitor(env, logger.get_dir() and 
-        osp.join(logger.get_dir(), "monitor.json"))
+                                    hid_size=32, num_hid_layers=2)
+
+    env = bench.Monitor(env, logger.get_dir() and
+                        osp.join(logger.get_dir(), "monitor.json"))
     env.seed(args.seed)
     gym.logger.setLevel(logging.WARN)
-    task_name = "ppo." + args.env_id.split("-")[0] + "." + ("%.2f"%args.entcoeff)
+    task_name = "ppo." + args.env_id.split("-")[0] + "." + ("%.2f" % args.entcoeff)
     args.checkpoint_dir = osp.join(args.checkpoint_dir, task_name)
-    pposgd_simple.learn(env, policy_fn, 
-            max_timesteps=args.num_timesteps,
-            timesteps_per_batch=2048,
-            clip_param=0.2, entcoeff=args.entcoeff,
-            optim_epochs=10, optim_stepsize=3e-4, optim_batchsize=64,
-            gamma=0.99, lam=0.95, schedule='linear', ckpt_dir=args.checkpoint_dir,
-            save_per_iter=args.save_per_iter, task=args.task,
-            sample_stochastic=args.sample_stochastic,
-            load_model_path=args.load_model_path,
-            task_name=task_name
-        )
+    pposgd_simple.learn(env, policy_fn,
+                        max_timesteps=args.num_timesteps,
+                        timesteps_per_batch=2048,
+                        clip_param=0.2, entcoeff=args.entcoeff,
+                        optim_epochs=10, optim_stepsize=3e-4, optim_batchsize=64,
+                        gamma=0.99, lam=0.95, schedule='linear', ckpt_dir=args.checkpoint_dir,
+                        save_per_iter=args.save_per_iter, task=args.task,
+                        sample_stochastic=args.sample_stochastic,
+                        load_model_path=args.load_model_path,
+                        task_name=task_name)
     env.close()
+
 
 def main():
     import argparse
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--env_id', help='environment ID', default='Hopper-v1')
     parser.add_argument('--seed', help='RNG seed', type=int, default=0)
-    parser.add_argument('--task', help='Choose to do which task', type=str, choices=['train', 'sample_trajectory'], default='train')
+    parser.add_argument('--task', help='Choose to do which task', type=str, choices=['train', 'sample_trajectory'],
+                        default='train')
     parser.add_argument('--sample_stochastic', type=bool, default=False)
     parser.add_argument('--num_cpu', help='number of cpu to used', type=int, default=1)
     parser.add_argument('--entcoeff', help='entropy coefficiency', type=float, default=0)
