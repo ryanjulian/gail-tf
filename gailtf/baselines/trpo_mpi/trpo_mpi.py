@@ -292,7 +292,7 @@ def learn(env, policy_func, *,
         elif max_iters and iters_so_far >= max_iters:
             print("Terminated because iters_so_far >= max_iters.")
             break
-        logger.log("********** Iteration %i of %i ************" % (iters_so_far, max_iters))
+        logger.log("********** Iteration %i of %i ************" % (iters_so_far+1, max_iters))
         # Save model
         if iters_so_far % save_per_iter == 0 and ckpt_dir is not None:
             U.save_state(os.path.join(ckpt_dir, task_name), counter=iters_so_far)
@@ -391,12 +391,12 @@ def learn(env, policy_func, *,
             logger.dump_tabular()
 
 
-def sample_trajectory(load_model_path, max_sample_traj, traj_gen, task_name, sample_stochastic):
+def sample_trajectory(load_model_path, max_sample_traj, traj_gen, task_name, sample_stochastic, min_ep_len=1000):
     assert load_model_path is not None
     U.load_state(load_model_path)
     sample_trajs = []
     for iters_so_far in range(max_sample_traj):
-        logger.log("********** Iteration %i ************" % iters_so_far)
+        logger.log("********** Sampling Iteration %i of %i ************" % (iters_so_far+1, max_sample_traj))
         traj = traj_gen.__next__()
         positions, features, ob, new, ep_ret, ac, rew, ep_len = traj['positions'], traj['features'], traj['ob'], traj['new'], traj['ep_ret'], traj['ac'], traj['rew'], traj[
             'ep_len']
@@ -405,6 +405,19 @@ def sample_trajectory(load_model_path, max_sample_traj, traj_gen, task_name, sam
         logger.record_tabular("immediate reward", np.mean(rew))
         if MPI.COMM_WORLD.Get_rank() == 0:
             logger.dump_tabular()
+        while ep_len < min_ep_len:
+            logger.warn("Repeating sampling because ep_len = %i < %i..." % (ep_len, min_ep_len))
+            logger.log("********** REPEATED Sampling Iteration %i of %i ************" % (iters_so_far + 1, max_sample_traj))
+            traj = traj_gen.__next__()
+            positions, features, ob, new, ep_ret, ac, rew, ep_len = traj['positions'], traj['features'], traj['ob'], \
+                                                                    traj['new'], traj['ep_ret'], traj['ac'], traj[
+                                                                        'rew'], traj[
+                                                                        'ep_len']
+            logger.record_tabular("ep_ret", ep_ret)
+            logger.record_tabular("ep_len", ep_len)
+            logger.record_tabular("immediate reward", np.mean(rew))
+            if MPI.COMM_WORLD.Get_rank() == 0:
+                logger.dump_tabular()
         traj_data = {"ob": ob, "ac": ac, "rew": rew, "ep_ret": ep_ret, "features": features, "positions": positions}
         sample_trajs.append(traj_data)
 
