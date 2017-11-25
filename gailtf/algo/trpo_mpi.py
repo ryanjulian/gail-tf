@@ -258,6 +258,7 @@ def learn(env, policy_func, discriminator, expert_dataset,
 
         # Save model
         if iters_so_far % save_per_iter == 0 and ckpt_dir is not None:
+            print("Saving policy checkpoint at %s..." % os.path.join(ckpt_dir, task_name))
             U.save_state(os.path.join(ckpt_dir, task_name), counter=iters_so_far)
 
         logger.log("********** Iteration %i ************" % iters_so_far)
