@@ -9,11 +9,11 @@ import ipdb
 
 
 class TransitionClassifier(object):
-    def __init__(self, env, hidden_size, entcoeff=0.001, lr_rate=1e-3, scope="adversary"):
+    def __init__(self, observation_shape, hidden_size, entcoeff=0.001, lr_rate=1e-3, scope="adversary"):
         self.scope = scope
-        self.observation_shape = 15,
+        self.observation_shape = observation_shape
         self.actions_shape = np.array([0, 0])  # env.action_space.shape
-        self.input_shape = 15,  # tuple([o + a for o, a in zip(self.observation_shape, self.actions_shape)]) #XXX make feature space!
+        self.input_shape = self.observation_shape
         self.hidden_size = hidden_size
         self.build_ph()
         # Build grpah

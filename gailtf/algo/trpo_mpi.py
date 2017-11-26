@@ -10,12 +10,18 @@ from gailtf.baselines.common.mpi_adam import MpiAdam
 from gailtf.baselines.common.cg import cg
 from contextlib import contextmanager
 from gailtf.common.statistics import stats
-import ipdb
+from numpy.linalg import norm
+
+
+def normalize(vector):
+    return vector / (norm(vector) + 1e-10)
 
 """This is the GAIL implementation."""
 
 
-def traj_segment_generator(pi, env, discriminator, horizon, stochastic, compute_features=True):
+def traj_segment_generator(pi, env, discriminator, horizon, stochastic, compute_features=True,
+                           forward_vector_frames=10,
+                           frames_per_feature=3):
     # Initialize state variables
     t = 0
     ac = env.action_space.sample()
@@ -40,10 +46,13 @@ def traj_segment_generator(pi, env, discriminator, horizon, stochastic, compute_
     acs = np.array([ac for _ in range(horizon)])
     prevacs = acs.copy()
 
+    output_features = np.zeros((horizon, 18 * frames_per_feature))
+    positions = [{"root": np.zeros((1, 3))}] * forward_vector_frames
+
     feature, features = [], []
     if compute_features:
-        feature = env.env.env.compute_features()
-        features = np.array([feature for _ in range(horizon)])
+        feature = np.zeros(18 * frames_per_feature)
+        features = [np.zeros(18)] * (frames_per_feature-1)
 
     while True:
         prevac = ac
@@ -56,7 +65,7 @@ def traj_segment_generator(pi, env, discriminator, horizon, stochastic, compute_
                 yield {"ob": obs, "rew": rews, "vpred": vpreds, "new": news,
                        "ac": acs, "prevac": prevacs, "nextvpred": vpred * (1 - new),
                        "ep_rets": ep_rets, "ep_lens": ep_lens, "ep_true_rets": ep_true_rets,
-                       "features": features}
+                       "features": output_features}
             else:
                 yield {"ob": obs, "rew": rews, "vpred": vpreds, "new": news,
                        "ac": acs, "prevac": prevacs, "nextvpred": vpred * (1 - new),
@@ -74,17 +83,28 @@ def traj_segment_generator(pi, env, discriminator, horizon, stochastic, compute_
         acs[i] = ac
         prevacs[i] = prevac
 
-        if compute_features:
-            features[i] = feature
-
-        # TODO ob should only be the features!
         rew = discriminator.get_reward(feature)
         ob, true_rew, new, _ = env.step(ac)
         rews[i] = rew
         true_rews[i] = true_rew
 
         if compute_features:
-            feature = env.env.env.compute_features()
+            feat = env.env.env.compute_features()
+            pos = env.env.env.compute_positions()
+
+            # Compute forward-facing unit vector from the average of previous frames
+            forward_vector = np.zeros((1, 3))
+            previous_pos = positions[-forward_vector_frames]["root"]
+            for j in range(-forward_vector_frames + 1, 0):
+                next_pos = positions[j]["root"]
+                forward_vector += normalize(next_pos - previous_pos)
+                previous_pos = next_pos.copy()
+            forward_vector /= forward_vector_frames
+            feat = np.hstack((feat, forward_vector.flatten()))
+            features.append(feat)
+
+            positions.append(pos)
+            output_features[i, :] = np.array(features[-frames_per_feature:]).flatten()
 
         cur_ep_ret += rew
         cur_ep_true_ret += true_rew
@@ -97,6 +117,11 @@ def traj_segment_generator(pi, env, discriminator, horizon, stochastic, compute_
             cur_ep_true_ret = 0
             cur_ep_len = 0
             ob = env.reset()
+
+            if compute_features:
+                features = [np.zeros(18)] * (frames_per_feature-1)
+                positions = [{"root": np.zeros((1, 3))}] * forward_vector_frames
+                output_features = np.zeros((horizon, 18 * frames_per_feature))
         t += 1
 
 
@@ -348,7 +373,7 @@ def learn(env, policy_func, discriminator, expert_dataset,
         d_losses = []  # list of tuples, each of which gives the loss for a minibatch
         for ob_batch, ac_batch in dataset.iterbatches((feature, ac),
                                                       include_final_partial_batch=False, batch_size=batch_size):
-            ob_expert, ac_expert = expert_dataset.get_next_batch(len(ob_batch))
+            ob_expert, _ = expert_dataset.get_next_batch(len(ob_batch))
             # update running mean/std for discriminator
             if hasattr(discriminator, "obs_rms"): discriminator.obs_rms.update(np.concatenate((ob_batch, ob_expert), 0))
             *newlosses, g = discriminator.lossandgrad(ob_batch, ob_expert)
@@ -420,14 +445,14 @@ def traj_episode_generator(pi, env, horizon, stochastic):
             yield {"ob": obs, "rew": rews, "new": news, "ac": acs,
                    "ep_ret": cur_ep_ret, "ep_len": cur_ep_len}
             ob = env.reset()
-            cur_ep_ret = 0;
-            cur_ep_len = 0;
+            cur_ep_ret = 0
+            cur_ep_len = 0
             t = 0
 
             # Initialize history arrays
-            obs = [];
-            rews = [];
-            news = [];
+            obs = []
+            rews = []
+            news = []
             acs = []
         t += 1
 

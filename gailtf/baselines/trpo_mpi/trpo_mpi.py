@@ -10,12 +10,19 @@ from gailtf.baselines.common.mpi_adam import MpiAdam
 from gailtf.baselines.common.cg import cg
 from contextlib import contextmanager
 import pickle as pkl
+from numpy.linalg import norm
+
+
+def normalize(vector):
+    return vector / (norm(vector) + 1e-10)
 
 
 # Sample one trajectory (until trajectory end)
-def traj_episode_generator(pi, env, horizon, stochastic, compute_features=True):
+def traj_episode_generator(pi, env, horizon, stochastic,
+                           forward_vector_frames=10,
+                           frames_per_feature=3):
     t = 0
-    ac = env.action_space.sample()  # not used, just so we have the datatype
+    env.allow_early_resets = True
     new = True  # marks if we're on first timestep of an episode
 
     ob = env.reset()
@@ -27,18 +34,30 @@ def traj_episode_generator(pi, env, horizon, stochastic, compute_features=True):
     rews = []
     news = []
     acs = []
-    features = []
-    positions = []
+    features = [np.zeros(18)] * (frames_per_feature-1)
+    positions = [{"root": np.zeros((1, 3))}] * forward_vector_frames
+    output_features = []
 
     while True:
-        prevac = ac
         ac, vpred = pi.act(stochastic, ob)
         obs.append(ob)
         news.append(new)
         acs.append(ac)
         feat = env.env.env.compute_features()
         pos = env.env.env.compute_positions()
+
+        # Compute forward-facing unit vector from the average of previous frames
+        forward_vector = np.zeros((1, 3))
+        previous_pos = positions[-forward_vector_frames]["root"]
+        for j in range(-forward_vector_frames + 1, 0):
+            next_pos = positions[j]["root"]
+            forward_vector += normalize(next_pos - previous_pos)
+            previous_pos = next_pos.copy()
+        forward_vector /= forward_vector_frames
+        feat = np.hstack((feat, forward_vector.flatten()))
+
         features.append(feat)
+        output_features.append(np.array(features[-frames_per_feature:]).flatten())
         positions.append(pos)
         ob, rew, new, _ = env.step(ac)
         rews.append(rew)
@@ -51,14 +70,11 @@ def traj_episode_generator(pi, env, horizon, stochastic, compute_features=True):
             rews = np.array(rews)
             news = np.array(news)
             acs = np.array(acs)
-            features = np.array(features)
-            if compute_features:
-                yield {"ob": obs, "rew": rews, "new": news, "ac": acs,
-                       "ep_ret": cur_ep_ret, "ep_len": cur_ep_len,
-                       "features": features, "positions": positions}
-            else:
-                yield {"ob": obs, "rew": rews, "new": news, "ac": acs,
-                       "ep_ret": cur_ep_ret, "ep_len": cur_ep_len}
+            output_features = np.array(output_features)
+            print("Output features:", output_features.shape)
+            yield {"ob": obs, "rew": rews, "new": news, "ac": acs,
+                   "ep_ret": cur_ep_ret, "ep_len": cur_ep_len,
+                   "features": output_features, "positions": positions[forward_vector_frames:]}
             ob = env.reset()
             cur_ep_ret = 0
             cur_ep_len = 0
@@ -69,7 +85,9 @@ def traj_episode_generator(pi, env, horizon, stochastic, compute_features=True):
             rews = []
             news = []
             acs = []
-            features = []
+            features = [np.zeros(18)] * (frames_per_feature-1)
+            positions = [{"root": np.zeros((1, 3))}] * forward_vector_frames
+            output_features = []
         t += 1
 
 
@@ -275,10 +293,10 @@ def learn(env, policy_func, *,
     if task == 'sample_trajectory':
         print("Sampling trajectory...")
         traj_gen = traj_episode_generator(pi, env, timesteps_per_batch,
-                                          stochastic=sample_stochastic,
-                                          compute_features=True)
+                                          stochastic=sample_stochastic)
         # not elegant, i know :(
-        sample_trajectory(load_model_path, max_sample_traj, traj_gen, task_name, sample_stochastic)
+        sample_trajectory(load_model_path, max_sample_traj, traj_gen, task_name,
+                          sample_stochastic, min_ep_len=timesteps_per_batch)
         sys.exit()
 
     while True:
@@ -391,15 +409,16 @@ def learn(env, policy_func, *,
             logger.dump_tabular()
 
 
-def sample_trajectory(load_model_path, max_sample_traj, traj_gen, task_name, sample_stochastic, min_ep_len=1000):
+def sample_trajectory(load_model_path, max_sample_traj, traj_gen, task_name, sample_stochastic, min_ep_len=200):
     assert load_model_path is not None
     U.load_state(load_model_path)
     sample_trajs = []
     for iters_so_far in range(max_sample_traj):
         logger.log("********** Sampling Iteration %i of %i ************" % (iters_so_far+1, max_sample_traj))
         traj = traj_gen.__next__()
-        positions, features, ob, new, ep_ret, ac, rew, ep_len = traj['positions'], traj['features'], traj['ob'], traj['new'], traj['ep_ret'], traj['ac'], traj['rew'], traj[
-            'ep_len']
+        positions, features, ob, new, ep_ret, ac, rew, ep_len = traj['positions'], traj['features'], traj['ob'],\
+                                                                traj['new'], traj['ep_ret'], traj['ac'],\
+                                                                traj['rew'], traj['ep_len']
         logger.record_tabular("ep_ret", ep_ret)
         logger.record_tabular("ep_len", ep_len)
         logger.record_tabular("immediate reward", np.mean(rew))
@@ -410,9 +429,8 @@ def sample_trajectory(load_model_path, max_sample_traj, traj_gen, task_name, sam
             logger.log("********** REPEATED Sampling Iteration %i of %i ************" % (iters_so_far + 1, max_sample_traj))
             traj = traj_gen.__next__()
             positions, features, ob, new, ep_ret, ac, rew, ep_len = traj['positions'], traj['features'], traj['ob'], \
-                                                                    traj['new'], traj['ep_ret'], traj['ac'], traj[
-                                                                        'rew'], traj[
-                                                                        'ep_len']
+                                                                    traj['new'], traj['ep_ret'], traj['ac'],\
+                                                                    traj['rew'], traj['ep_len']
             logger.record_tabular("ep_ret", ep_ret)
             logger.record_tabular("ep_len", ep_len)
             logger.record_tabular("immediate reward", np.mean(rew))
