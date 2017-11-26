@@ -29,7 +29,7 @@ def train(args):
 
     def policy_fn(name, ob_space, ac_space):
         return MlpPolicy(name=name, ob_space=env.observation_space, ac_space=env.action_space,
-                         hid_size=64, num_hid_layers=2)
+                         hid_size=100, num_hid_layers=2)
 
     env = bench.Monitor(env, logger.get_dir() and
                         osp.join(logger.get_dir(), "%i.monitor.json" % rank))
