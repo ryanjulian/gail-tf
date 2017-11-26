@@ -1,2 +1,2 @@
-model_checkpoint_path: "trpo.HumanoidFeaturized.0.00-390"
-all_model_checkpoint_paths: "trpo.HumanoidFeaturized.0.00-390"
+model_checkpoint_path: "trpo.HumanoidFeaturized.0.00-2220"
+all_model_checkpoint_paths: "trpo.HumanoidFeaturized.0.00-2220"
