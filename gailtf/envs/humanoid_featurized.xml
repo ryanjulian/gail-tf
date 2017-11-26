@@ -73,11 +73,12 @@
                         <body name='right_shin' pos='0 0.01 -0.403' >
                             <joint name='right_knee' type='hinge' pos='0 0 .02' axis='0 -1 0' range='-160 -2' armature='0.0060' />
                             <geom name='right_shin1' type='capsule' fromto='0 0 0 0 0 -.3'   size='0.049' />
-                            <body name='right_foot' pos='0 0 -.39' >
+                            <body name='right_foot_complex' pos='0 0 -.39' >
                                 <joint name='right_ankle_y' type='hinge' pos='0 0 0.08' axis='0 1 0'   range='-50 50' stiffness='4' armature='0.0008' />
                                 <joint name='right_ankle_x' type='hinge' pos='0 0 0.04' axis='1 0 0.5' range='-50 50' stiffness='1'  armature='0.0006' />
                                 <geom name='right_foot_cap1' type='capsule' fromto='-.07 -0.02 0 0.14 -0.04 0'  size='0.027' />
                                 <geom name='right_foot_cap2' type='capsule' fromto='-.07 0 0 0.14  0.02 0'  size='0.027' />
+                                <body name="right_foot" pos="0.1 0 0" />
                             </body>
                         </body>
                     </body>
@@ -89,11 +90,12 @@
                         <body name='left_shin' pos='0 -0.01 -0.403' >
                             <joint name='left_knee' type='hinge' pos='0 0 .02' axis='0 -1 0' range='-160 -2' stiffness='1' armature='0.0060' />
                             <geom name='left_shin1' type='capsule' fromto='0 0 0 0 0 -.3'   size='0.049' />
-                            <body name='left_foot' pos='0 0 -.39' >
+                            <body name='left_foot_complex' pos='0 0 -.39' >
                                 <joint name='left_ankle_y' type='hinge' pos='0 0 0.08' axis='0 1 0'   range='-50 50'  stiffness='4' armature='0.0008' />
                                 <joint name='left_ankle_x' type='hinge' pos='0 0 0.04' axis='1 0 0.5' range='-50 50'  stiffness='1'  armature='0.0006' />
                                 <geom name='left_foot_cap1' type='capsule' fromto='-.07 0.02 0 0.14 0.04 0'  size='0.027' />
                                 <geom name='left_foot_cap2' type='capsule' fromto='-.07 0 0 0.14  -0.02 0'  size='0.027' />
+                                <body name="left_foot" pos="0.1 0 0" />
                             </body>
                         </body>
                     </body>
