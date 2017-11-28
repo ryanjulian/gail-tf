@@ -265,6 +265,7 @@ def learn(env, policy_func, discriminator, expert_dataset,
         U.load_state(pretrained_weight, var_list=pi.get_variables())
     # if provieded model path
     if load_model_path is not None:
+        print("Loading pretrained policy network from checkpoint %s" % load_model_path)
         U.load_state(load_model_path)
 
     feature = []

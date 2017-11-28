@@ -42,6 +42,7 @@ def argsparser():
     # Behavior Cloning
     parser.add_argument('--pretrained', help='Use BC to pretrain', type=bool, default=False)
     parser.add_argument('--BC_max_iter', help='Max iteration for training BC', type=int, default=1e4)
+
     return parser.parse_args()
 
 
@@ -70,7 +71,7 @@ def main(args):
 
     def policy_fn(name, ob_space, ac_space, reuse=False):
         return mlp_policy.MlpPolicy(name=name, ob_space=ob_space, ac_space=ac_space,
-                                    reuse=reuse, hid_size=150, num_hid_layers=3)
+                                    reuse=reuse, hid_size=100, num_hid_layers=2)
 
     env = bench.Monitor(env, logger.get_dir() and
                         osp.join(logger.get_dir(), "monitor.json"))
