@@ -97,7 +97,7 @@ def main(args):
 
     from gailtf.network.adversary import TransitionClassifier
     # discriminator
-    discriminator = TransitionClassifier((54,), args.adversary_hidden_size, entcoeff=args.adversary_entcoeff)
+    discriminator = TransitionClassifier((18,), args.adversary_hidden_size, entcoeff=args.adversary_entcoeff)
     if args.algo == 'trpo':
         # Set up for MPI seed
         from mpi4py import MPI
