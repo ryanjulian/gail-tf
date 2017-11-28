@@ -49,7 +49,7 @@ CUDA_VISIBLE_DEVICES="" python3 run_rl.py --env HumanoidFeaturized-v1 --load exa
 ```
 To create a roll-out pickle file from a TRPO expert (given by a checkpoint file):
 ```
-PYTHONPATH=.:$PYTHONPATH mpirun -np 24 python3 gailtf/baselines/trpo_mpi/run_mujoco.py --env_id HumanoidFeaturized-v1 --task sample_trajectory --sample_stochastic False --load_model_path ../../expert/trpo.HumanoidFeaturized.0.00-15200
+python3 gailtf/baselines/trpo_mpi/run_mujoco.py --env_id HumanoidFeaturized-v1 --task sample_trajectory --sample_stochastic False --load_model_path ../../expert/trpo.HumanoidFeaturized.0.00-3570
 ```
 To create a roll-out from mocap data:
 ```
