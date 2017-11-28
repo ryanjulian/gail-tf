@@ -35,6 +35,32 @@ Then issue the following command to run GAIL using this expert:
 python3 main.py
 ```
 
+## Instructions for Running Stuff on Google Cloud Platform
+### All the magic happens in the Docker and therefore in .deep-rl-docker (which is the Docker's home folder)
+#### (This can be accessed from outside, obviously :) )
+Train a TRPO expert in the ryanjulian/gail-tf repo:
+```
+PYTHONPATH=.:$PYTHONPATH mpirun -np 24 python3 gailtf/baselines/trpo_mpi/run_mujoco.py --num_cpu 24
+```
+To visualize the policy at a given checkpoint, issue:
+```
+# copy the policy (which is often stored in checkpoint-folders, e.g. ~/gail-tf/checkpoint/trpo_gail.HumanoidFeaturized.g_step_3.d_step_1.policy_entcoeff_0.adversary_entcoeff_0.001)
+CUDA_VISIBLE_DEVICES="" python3 run_rl.py --env HumanoidFeaturized-v1 --load examples/trpo.HumanoidFeaturized.0.00-390 --hidden-size 64 --hidden-layers 2
+```
+To create a roll-out pickle file from a TRPO expert (given by a checkpoint file):
+```
+python3 gailtf/baselines/trpo_mpi/run_mujoco.py --env_id HumanoidFeaturized-v1 --task sample_trajectory --sample_stochastic False --load_model_path ../../expert/trpo.HumanoidFeaturized.0.00-3570
+```
+To create a roll-out from mocap data:
+```
+# Issue this command in uscresl/humanoid-gail:
+python3 mocap/generate_rollouts.py
+```
+To run GAIL on a roll-out PKL file:
+```
+sudo mpirun --allow-run-as-root -np 24 python3 main.py --expert_path rollout/stochastic.trpo.HumanoidFeaturized.0.00.pkl --num_cpu 24
+```
+
 
 ## What's GAIL?
 - model free imtation learning -> low sample efficiency in training time
