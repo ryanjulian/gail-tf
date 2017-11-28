@@ -20,7 +20,7 @@ def normalize(vector):
 # Sample one trajectory (until trajectory end)
 def traj_episode_generator(pi, env, horizon, stochastic,
                            forward_vector_frames=10,
-                           frames_per_feature=3):
+                           frames_per_feature=1):
     t = 0
     env.allow_early_resets = True
     new = True  # marks if we're on first timestep of an episode
@@ -51,7 +51,7 @@ def traj_episode_generator(pi, env, horizon, stochastic,
         previous_pos = positions[-forward_vector_frames]["root"]
         for j in range(-forward_vector_frames + 1, 0):
             next_pos = positions[j]["root"]
-            forward_vector += normalize(next_pos - previous_pos)
+            forward_vector += next_pos - previous_pos
             previous_pos = next_pos.copy()
         forward_vector /= forward_vector_frames
         feat = np.hstack((feat, forward_vector.flatten()))

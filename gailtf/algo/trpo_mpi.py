@@ -21,7 +21,7 @@ def normalize(vector):
 
 def traj_segment_generator(pi, env, discriminator, horizon, stochastic, compute_features=True,
                            forward_vector_frames=10,
-                           frames_per_feature=3):
+                           frames_per_feature=1):
     # Initialize state variables
     t = 0
     ac = env.action_space.sample()
@@ -97,7 +97,7 @@ def traj_segment_generator(pi, env, discriminator, horizon, stochastic, compute_
             previous_pos = positions[-forward_vector_frames]["root"]
             for j in range(-forward_vector_frames + 1, 0):
                 next_pos = positions[j]["root"]
-                forward_vector += normalize(next_pos - previous_pos)
+                forward_vector += next_pos - previous_pos
                 previous_pos = next_pos.copy()
             forward_vector /= forward_vector_frames
             feat = np.hstack((feat, forward_vector.flatten()))
