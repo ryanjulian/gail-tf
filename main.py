@@ -21,7 +21,7 @@ def argsparser():
     # Task
     parser.add_argument('--task', type=str, choices=['train', 'evaluate'], default='train')
     # for evaluatation
-    parser.add_argument('--stochastic_policy', type=bool, default=False)
+    parser.add_argument('--stochastic_policy', type=bool, default=True)
     #  Mujoco Dataset Configuration
     parser.add_argument('--ret_threshold', help='the return threshold for the expert trajectories', type=int, default=0)
     parser.add_argument('--traj_limitation', type=int, default=np.inf)

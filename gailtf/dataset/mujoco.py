@@ -61,7 +61,7 @@ class Mujoco_Dset(object):
         # self.avg_len = sum(lens) / len(lens)
         # self.rets = np.array(rets)
         # self.lens = np.array(lens)
-        self.obs = np.array([v for ob in obs for v in ob])
+        self.obs = np.array([v for ob in obs for v in ob])[100:]
         # self.acs = np.array([v for ac in acs for v in ac])
         # if len(self.acs) > 2:
         #     self.acs = np.squeeze(self.acs)
