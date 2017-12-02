@@ -58,6 +58,9 @@ python3 mocap/generate_rollouts.py
 ```
 To run GAIL on a roll-out PKL file:
 ```
+mpirun -np 24 python3 main.py --expert_path rollout/stochastic.trpo.HumanoidFeaturized.0.00.pkl --num_cpu 24 | tee training.log
+
+# bad practice
 sudo mpirun --allow-run-as-root -np 24 python3 main.py --expert_path rollout/stochastic.trpo.HumanoidFeaturized.0.00.pkl --num_cpu 24
 ```
 

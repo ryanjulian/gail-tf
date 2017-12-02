@@ -270,6 +270,11 @@ def learn(env, policy_func, discriminator, expert_dataset,
 
     feature = []
 
+    # add instance noise to (the input of the) discriminator
+    # linearly lower temperature over time from std=1 until std=1e-3 at iteration 500
+    dis_noise_std = 1.
+    dis_noise_step = 1./500.
+
     while True:
         if callback: callback(locals(), globals())
         if max_timesteps and timesteps_so_far >= max_timesteps:
@@ -377,7 +382,11 @@ def learn(env, policy_func, discriminator, expert_dataset,
             ob_expert, _ = expert_dataset.get_next_batch(len(ob_batch))
             # update running mean/std for discriminator
             if hasattr(discriminator, "obs_rms"): discriminator.obs_rms.update(np.concatenate((ob_batch, ob_expert), 0))
-            *newlosses, g = discriminator.lossandgrad(ob_batch, ob_expert)
+            # add instance noise to real AND fake input to discriminator
+            ob_batch_noised = ob_batch + np.random.normal(0, dis_noise_std, ob_batch.shape)
+            ob_expert_noised = ob_expert + np.random.normal(0, dis_noise_std, ob_expert.shape)
+            # *newlosses, g = discriminator.lossandgrad(ob_batch, ob_expert)
+            *newlosses, g = discriminator.lossandgrad(ob_batch_noised, ob_expert_noised)
             d_adam.update(allmean(g), d_stepsize)
             d_losses.append(newlosses)
         logger.log(fmt_row(13, np.mean(d_losses, axis=0)))
@@ -400,6 +409,10 @@ def learn(env, policy_func, discriminator, expert_dataset,
         logger.record_tabular("EpisodesSoFar", episodes_so_far)
         logger.record_tabular("TimestepsSoFar", timesteps_so_far)
         logger.record_tabular("TimeElapsed", time.time() - tstart)
+
+        # update instance noise std for discriminator
+        logger.record_tabular("DisNoiseStd", dis_noise_std)
+        dis_noise_std = max(1e-3, dis_noise_std-dis_noise_step)
 
         if rank == 0:
             logger.dump_tabular()
