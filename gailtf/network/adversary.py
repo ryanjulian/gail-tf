@@ -16,7 +16,7 @@ class TransitionClassifier(object):
         self.input_shape = self.observation_shape
         self.hidden_size = hidden_size
         self.build_ph()
-        # Build grpah
+        # Build graph
         generator_logits = self.build_graph(self.generator_obs_ph, reuse=False)
         expert_logits = self.build_graph(self.expert_obs_ph, reuse=True)
         # Build accuracy
@@ -53,7 +53,6 @@ class TransitionClassifier(object):
         with tf.variable_scope(self.scope):
             if reuse:
                 tf.get_variable_scope().reuse_variables()
-
             with tf.variable_scope("obfilter"):
                 self.obs_rms = RunningMeanStd(shape=self.observation_shape)
             obs = (obs_ph - self.obs_rms.mean / self.obs_rms.std)
@@ -70,6 +69,7 @@ class TransitionClassifier(object):
         sess = U.get_session()
         if len(obs.shape) == 1:
             obs = np.expand_dims(obs, 0)
+
         feed_dict = {self.generator_obs_ph: obs}
         reward = sess.run(self.reward_op, feed_dict)
         return reward

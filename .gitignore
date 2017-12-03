@@ -9,6 +9,10 @@ MUJOCO_LOG.TXT
 log/
 checkpoint/
 
+interactive_legend.html
+core
+nodesource_setup.sh
+
 
 
 ####### https://github.com/github/gitignore/blob/master/Python.gitignore #######
