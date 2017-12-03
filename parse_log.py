@@ -16,22 +16,27 @@ def parse(filename):
     print('Parsed %i generator/expert performance entries.' % len(geeeges))
     geeeges = np.array(geeeges)
 
+    # parse tabulated values
     tables = defaultdict(list)
     table_open = False
+    table_entries = 0
     for line in lines:
         if line.startswith('--------------------------------'):
             table_open = not table_open
+            if table_open:
+                table_entries += 1
             continue
         if table_open:
             key, value = tuple(line.replace('|', '').split())
             tables[key].append(float(value))
+    print('Parsed %i tabulated performance entries.' % table_entries)
 
-    tables['generator_loss'] = geeeges[:,0]
-    tables['expert_loss'] = geeeges[:,1]
-    tables['entropy'] = geeeges[:,2]
-    tables['entropy_loss'] = geeeges[:,3]
-    tables['generator_acc'] = geeeges[:,4]
-    tables['expert_acc'] = geeeges[:,4]
+    tables['generator_loss'] = geeeges[:, 0]
+    tables['expert_loss'] = geeeges[:, 1]
+    tables['entropy'] = geeeges[:, 2]
+    tables['entropy_loss'] = geeeges[:, 3]
+    tables['generator_acc'] = geeeges[:, 4]
+    tables['expert_acc'] = geeeges[:, 4]
 
     return tables
 
